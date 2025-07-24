@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: telemetrysleuth
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=telemetrysleuth
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123
+      - TCP_HOST=0.0.0.0
+      - TCP_PORT=9000
+      - SECRET_KEY=production-secret-key-change-me
+      - DEBUG=false
+    ports:
+      - "9000:9000"  # TCP listener port
+      - "5000:5000"  # Web interface port
+    volumes:
+      - ./logs:/app/logs
+    command: tcp-listener
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=telemetrysleuth
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123
+      - SECRET_KEY=production-secret-key-change-me
+      - DEBUG=false
+    ports:
+      - "8080:5000"  # Web interface on port 8080
+    volumes:
+      - ./logs:/app/logs
+    command: web
+
+volumes:
+  postgres_data:
