@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Telemetry Sleuth{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-speedometer2"></i> Dashboard</h1>
+        <p class="text-muted">Real-time SMDR call data monitoring and statistics</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card h-100 border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-database-fill text-primary fs-1"></i>
+                <h3 class="mt-2 mb-1" id="total-records">{{ stats.total_records or 0 }}</h3>
+                <p class="card-text text-muted mb-0">Total Records</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card h-100 border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-day text-success fs-1"></i>
+                <h3 class="mt-2 mb-1" id="today-records">{{ stats.today_records or 0 }}</h3>
+                <p class="card-text text-muted mb-0">Today's Calls</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card h-100 border-info">
+            <div class="card-body text-center">
+                <i class="bi bi-arrow-down-circle text-info fs-1"></i>
+                <h3 class="mt-2 mb-1" id="inbound-today">{{ stats.inbound_today or 0 }}</h3>
+                <p class="card-text text-muted mb-0">Inbound Today</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card h-100 border-warning">
+            <div class="card-body text-center">
+                <i class="bi bi-arrow-up-circle text-warning fs-1"></i>
+                <h3 class="mt-2 mb-1" id="outbound-today">{{ stats.outbound_today or 0 }}</h3>
+                <p class="card-text text-muted mb-0">Outbound Today</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Additional Statistics -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-building text-secondary fs-1"></i>
+                <h3 class="mt-2 mb-1" id="internal-today">{{ stats.internal_today or 0 }}</h3>
+                <p class="card-text text-muted mb-0">Internal Calls Today</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-globe text-secondary fs-1"></i>
+                <h3 class="mt-2 mb-1" id="external-today">{{ stats.external_today or 0 }}</h3>
+                <p class="card-text text-muted mb-0">External Calls Today</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-clock-history text-secondary fs-1"></i>
+                <h3 class="mt-2 mb-1" id="avg-duration">{{ "%.1f"|format(stats.avg_duration or 0) }}s</h3>
+                <p class="card-text text-muted mb-0">Avg Duration Today</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{{ url_for('search') }}" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Advanced Search
+                    </a>
+                    <a href="{{ url_for('search', direction='I') }}" class="btn btn-outline-success">
+                        <i class="bi bi-arrow-down-circle"></i> View Inbound Calls
+                    </a>
+                    <a href="{{ url_for('search', direction='O') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-up-circle"></i> View Outbound Calls
+                    </a>
+                    <a href="{{ url_for('search', is_internal='1') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-building"></i> Internal Calls Only
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Call Records -->
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Recent Call Records</h5>
+                <small class="text-muted">Last {{ records|length }} records</small>
+            </div>
+            
+            {% if records %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Time</th>
+                                <th>Caller</th>
+                                <th>Called</th>
+                                <th>Direction</th>
+                                <th>Type</th>
+                                <th>Duration</th>
+                                <th>Extension</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                                <tr class="{% if record.is_internal %}call-internal{% else %}call-external{% endif %}">
+                                    <td>
+                                        {% if record.call_start_time %}
+                                            <small>{{ record.call_start_time.strftime('%Y-%m-%d') }}</small><br>
+                                            <strong>{{ record.call_start_time.strftime('%H:%M:%S') }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.caller %}
+                                            <strong>{{ record.caller }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.called_number %}
+                                            <strong>{{ record.called_number }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if record.direction == 'I' else 'primary' }}">
+                                            <i class="bi bi-arrow-{{ 'down' if record.direction == 'I' else 'up' }}-circle"></i>
+                                            {{ record.direction | direction_name }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ record.direction | call_type(record.is_internal) }}</small>
+                                    </td>
+                                    <td>
+                                        {% if record.connected_time and record.connected_time > 0 %}
+                                            <span class="{% if record.connected_time > 300 %}duration-long{% endif %}">
+                                                {{ record.connected_time | duration }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">00:00:00</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.party1_device %}
+                                            <code>{{ record.party1_device }}</code>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('record_detail', record_id=record.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if pagination.total_pages > 1 %}
+                    <div class="card-footer">
+                        <div class="pagination-wrapper">
+                            <div>
+                                <small class="text-muted">
+                                    Showing {{ ((pagination.page - 1) * pagination.per_page + 1) }} to 
+                                    {{ (pagination.page * pagination.per_page if pagination.page < pagination.total_pages else pagination.total) }} 
+                                    of {{ pagination.total }} records
+                                </small>
+                            </div>
+                            
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% if pagination.has_prev %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('index', page=pagination.prev_num) }}">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for page_num in range(max(1, pagination.page - 2), min(pagination.total_pages + 1, pagination.page + 3)) %}
+                                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                            <a class="page-link" href="{{ url_for('index', page=page_num) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% endfor %}
+                                    
+                                    {% if pagination.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('index', page=pagination.next_num) }}">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="card-body text-center">
+                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 text-muted">No Call Records Found</h5>
+                    <p class="text-muted">No SMDR data has been received yet. Check your Avaya IP Office configuration.</p>
+                    <a href="{{ url_for('search') }}" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Search Records
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

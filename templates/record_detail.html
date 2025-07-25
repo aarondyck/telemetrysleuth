@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Call Record Details - Telemetry Sleuth{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Record Details</li>
+            </ol>
+        </nav>
+        <h1><i class="bi bi-telephone-fill"></i> Call Record Details</h1>
+        <p class="text-muted">Complete SMDR record information</p>
+    </div>
+</div>
+
+<!-- Call Summary Card -->
+<div class="row mb-4">
+    <div class="col">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Call Summary
+                    <span class="badge bg-light text-dark ms-2">ID: {{ record.call_id or 'N/A' }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Call Start Time</h6>
+                        {% if record.call_start_time %}
+                            <p class="mb-2">
+                                <strong>{{ record.call_start_time.strftime('%Y-%m-%d') }}</strong><br>
+                                <span class="h5">{{ record.call_start_time.strftime('%H:%M:%S') }}</span>
+                            </p>
+                        {% else %}
+                            <p class="text-muted">Not Available</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Direction & Type</h6>
+                        <p class="mb-2">
+                            <span class="badge bg-{{ 'success' if record.direction == 'I' else 'primary' }} fs-6">
+                                <i class="bi bi-arrow-{{ 'down' if record.direction == 'I' else 'up' }}-circle"></i>
+                                {{ record.direction | direction_name }}
+                            </span><br>
+                            <small>{{ record.direction | call_type(record.is_internal) }}</small>
+                        </p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Duration</h6>
+                        <p class="mb-2">
+                            {% if record.connected_time and record.connected_time > 0 %}
+                                <span class="h5 {% if record.connected_time > 300 %}text-danger{% endif %}">
+                                    {{ record.connected_time | duration }}
+                                </span><br>
+                                <small class="text-muted">{{ record.connected_time }} seconds</small>
+                            {% else %}
+                                <span class="text-muted">No connection</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-3">
+                        <h6 class="text-muted">Ring Time</h6>
+                        <p class="mb-2">
+                            {% if record.ring_time %}
+                                <span class="h6">{{ record.ring_time }}s</span>
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Party Information -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-fill"></i> Party 1 (Caller)</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th width="40%">Number:</th>
+                        <td>{{ record.caller or 'Not Available' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Name:</th>
+                        <td>{{ record.party1_name or 'Not Available' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Device:</th>
+                        <td>
+                            {% if record.party1_device %}
+                                <code>{{ record.party1_device }}</code>
+                            {% else %}
+                                Not Available
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person-fill"></i> Party 2 (Called)</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th width="40%">Number:</th>
+                        <td>{{ record.called_number or 'Not Available' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Dialed Number:</th>
+                        <td>{{ record.dialed_number or 'Not Available' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Name:</th>
+                        <td>{{ record.party2_name or 'Not Available' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Device:</th>
+                        <td>
+                            {% if record.party2_device %}
+                                <code>{{ record.party2_device }}</code>
+                            {% else %}
+                                Not Available
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Technical Details -->
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear-fill"></i> Technical Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="40%">Call ID:</th>
+                                <td>{{ record.call_id or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Continuation:</th>
+                                <td>{{ record.continuation or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Is Internal:</th>
+                                <td>
+                                    {% if record.is_internal is not none %}
+                                        <span class="badge bg-{{ 'secondary' if record.is_internal else 'primary' }}">
+                                            {{ 'Yes' if record.is_internal else 'No' }}
+                                        </span>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Account Code:</th>
+                                <td>{{ record.account_code or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Hold Time:</th>
+                                <td>{{ record.hold_time or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Park Time:</th>
+                                <td>{{ record.park_time or 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="40%">SMDR Record Time:</th>
+                                <td>
+                                    {% if record.smdr_record_time %}
+                                        {{ record.smdr_record_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Caller Server IP:</th>
+                                <td>{{ record.calling_party_server_ip or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Called Server IP:</th>
+                                <td>{{ record.called_party_server_ip or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Unique Call ID (Caller):</th>
+                                <td>{{ record.unique_call_id_caller or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Unique Call ID (Called):</th>
+                                <td>{{ record.unique_call_id_called or 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Billing Information (if available) -->
+{% if record.user_charged or record.call_charge or record.call_units %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Billing Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>User Charged:</th>
+                                <td>{{ record.user_charged or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Call Charge:</th>
+                                <td>{{ record.call_charge or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Currency:</th>
+                                <td>{{ record.currency or 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-4">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Call Units:</th>
+                                <td>{{ record.call_units or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Cost per Unit:</th>
+                                <td>{{ record.cost_per_unit or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Mark Up:</th>
+                                <td>{{ record.mark_up or 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-4">
+                        <table class="table table-sm">
+                            <tr>
+                                <th>Amount at Last Change:</th>
+                                <td>{{ record.amount_at_last_user_change or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Units at Last Change:</th>
+                                <td>{{ record.units_at_last_user_change or 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="row">
+    <div class="col">
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                <i class="bi bi-house"></i> Back to Dashboard
+            </a>
+            <a href="{{ url_for('search') }}" class="btn btn-primary">
+                <i class="bi bi-search"></i> Search Records
+            </a>
+            {% if record.caller %}
+                <a href="{{ url_for('search', caller=record.caller) }}" class="btn btn-outline-primary">
+                    <i class="bi bi-person"></i> More calls from {{ record.caller }}
+                </a>
+            {% endif %}
+            {% if record.called_number %}
+                <a href="{{ url_for('search', called=record.called_number) }}" class="btn btn-outline-success">
+                    <i class="bi bi-telephone"></i> More calls to {{ record.called_number }}
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

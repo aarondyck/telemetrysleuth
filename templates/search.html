@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Search Records - Telemetry Sleuth{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-search"></i> Search Records</h1>
+        <p class="text-muted">Search and filter SMDR call records</p>
+    </div>
+</div>
+
+<!-- Search Form -->
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{{ url_for('search') }}" class="search-form">
+                    <div class="row g-3">
+                        <!-- Date Range -->
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-6">
+                                    <label for="date_from" class="form-label">From Date</label>
+                                    <input type="date" class="form-control" id="date_from" name="date_from"
+                                           value="{{ search_params.date_from }}">
+                                </div>
+                                <div class="col-6">
+                                    <label for="date_to" class="form-label">To Date</label>
+                                    <input type="date" class="form-control" id="date_to" name="date_to"
+                                           value="{{ search_params.date_to }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Call Direction and Type -->
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-6">
+                                    <label for="direction" class="form-label">Direction</label>
+                                    <select class="form-select" id="direction" name="direction">
+                                        <option value="">All</option>
+                                        <option value="I" {% if search_params.direction == 'I' %}selected{% endif %}>Inbound</option>
+                                        <option value="O" {% if search_params.direction == 'O' %}selected{% endif %}>Outbound</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label for="is_internal" class="form-label">Call Type</label>
+                                    <select class="form-select" id="is_internal" name="is_internal">
+                                        <option value="">All</option>
+                                        <option value="1" {% if search_params.is_internal == '1' %}selected{% endif %}>Internal</option>
+                                        <option value="0" {% if search_params.is_internal == '0' %}selected{% endif %}>External</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Phone Numbers -->
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-6">
+                                    <label for="caller" class="form-label">Caller Number</label>
+                                    <input type="text" class="form-control" id="caller" name="caller"
+                                           value="{{ search_params.caller }}" placeholder="Enter caller number">
+                                </div>
+                                <div class="col-6">
+                                    <label for="called" class="form-label">Called Number</label>
+                                    <input type="text" class="form-control" id="called" name="called"
+                                           value="{{ search_params.called }}" placeholder="Enter called number">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-end h-100">
+                                <div class="flex-grow-1">
+                                    <button type="submit" class="btn btn-primary me-2">
+                                        <i class="bi bi-search"></i> Search
+                                    </button>
+                                    <a href="{{ url_for('search') }}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle"></i> Clear
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results -->
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Search Results</h5>
+                {% if records %}
+                    <small class="text-muted">Found {{ pagination.total }} records</small>
+                {% endif %}
+            </div>
+
+            {% if records %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Time</th>
+                                <th>Caller</th>
+                                <th>Called</th>
+                                <th>Direction</th>
+                                <th>Type</th>
+                                <th>Duration</th>
+                                <th>Extension</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                                <tr class="{% if record.is_internal %}call-internal{% else %}call-external{% endif %}">
+                                    <td>
+                                        {% if record.call_start_time %}
+                                            <small>{{ record.call_start_time.strftime('%Y-%m-%d') }}</small><br>
+                                            <strong>{{ record.call_start_time.strftime('%H:%M:%S') }}</strong>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.caller %}
+                                            <strong>{{ record.caller }}</strong>
+                                            {% if record.party1_name %}
+                                                <br><small class="text-muted">{{ record.party1_name }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.called_number %}
+                                            <strong>{{ record.called_number }}</strong>
+                                            {% if record.party2_name %}
+                                                <br><small class="text-muted">{{ record.party2_name }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if record.direction == 'I' else 'primary' }}">
+                                            <i class="bi bi-arrow-{{ 'down' if record.direction == 'I' else 'up' }}-circle"></i>
+                                            {{ record.direction | direction_name }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ record.direction | call_type(record.is_internal) }}</small>
+                                    </td>
+                                    <td>
+                                        {% if record.connected_time and record.connected_time > 0 %}
+                                            <span class="{% if record.connected_time > 300 %}duration-long{% endif %}">
+                                                {{ record.connected_time | duration }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">00:00:00</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.party1_device %}
+                                            <code>{{ record.party1_device }}</code>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('record_detail', record_id=record.id) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if pagination.total_pages > 1 %}
+                    <div class="card-footer">
+                        <div class="pagination-wrapper">
+                            <div>
+                                <small class="text-muted">
+                                    Showing {{ ((pagination.page - 1) * pagination.per_page + 1) }} to 
+                                    {{ (pagination.page * pagination.per_page if pagination.page < pagination.total_pages else pagination.total) }} 
+                                    of {{ pagination.total }} records
+                                </small>
+                            </div>
+                            
+                            <nav>
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% if pagination.has_prev %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('search', page=pagination.prev_num, **search_params) }}">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    {% for page_num in range(max(1, pagination.page - 2), min(pagination.total_pages + 1, pagination.page + 3)) %}
+                                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                            <a class="page-link" href="{{ url_for('search', page=page_num, **search_params) }}">
+                                                {{ page_num }}
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                    
+                                    {% if pagination.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('search', page=pagination.next_num, **search_params) }}">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="card-body text-center">
+                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                    <h5 class="mt-3 text-muted">No Records Found</h5>
+                    <p class="text-muted">Try adjusting your search criteria.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize date range if present in URL parameters
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateFrom = urlParams.get('date_from');
+        const dateTo = urlParams.get('date_to');
+        
+        if (dateFrom) {
+            document.getElementById('date_from').value = dateFrom;
+        }
+        if (dateTo) {
+            document.getElementById('date_to').value = dateTo;
+        }
+    });
+</script>
+{% endblock %}

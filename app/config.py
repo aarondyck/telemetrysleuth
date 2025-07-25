@@ -1,4 +1,4 @@
-"""
+
 Configuration settings for Telemetry Sleuth application.
 """
 
