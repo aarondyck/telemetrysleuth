@@ -1,62 +1,73 @@
 version: '3.8'
 
+# Environment-specific configurations
+x-base-config: &base-config
+  build:
+    context: .
+    args:
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+  env_file:
+    - .env
+  volumes:
+    - ./logs:/app/logs
+    - ./:/app
+  depends_on:
+    db:
+      condition: service_healthy
+
 services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_DB: telemetrysleuth
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: ${DB_NAME:-telemetrysleuth}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
-  app:
-    build: .
-    depends_on:
-      db:
-        condition: service_healthy
+  tcp-listener:
+    <<: *base-config
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=telemetrysleuth
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres123
+      - SERVICE_TYPE=tcp-listener
       - TCP_HOST=0.0.0.0
-      - TCP_PORT=9000
-      - SECRET_KEY=production-secret-key-change-me
-      - DEBUG=false
+      - TCP_PORT=${TCP_PORT:-9000}
+      - WEBSOCKET_PORT=${WEBSOCKET_PORT:-8765}
     ports:
-      - "9000:9000"  # TCP listener port
-      - "5000:5000"  # Web interface port
-    volumes:
-      - ./logs:/app/logs
+      - "${TCP_PORT:-9000}:9000"
+      - "${WEBSOCKET_PORT:-8765}:8765"
     command: tcp-listener
 
   web:
-    build: .
-    depends_on:
-      db:
-        condition: service_healthy
+    <<: *base-config
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=telemetrysleuth
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres123
-      - SECRET_KEY=production-secret-key-change-me
-      - DEBUG=false
+      - SERVICE_TYPE=web
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
     ports:
-      - "8080:5000"  # Web interface on port 8080
-    volumes:
-      - ./logs:/app/logs
+      - "${WEB_PORT:-5000}:5000"
     command: web
+
+  # Optional development tools
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8090:8080
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
+  logs:
+
+networks:
+  telemetrysleuth:
+    driver: bridge

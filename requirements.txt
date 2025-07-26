@@ -37,3 +37,4 @@ flake8==6.0.0
 # Production Monitoring (Optional)
 # prometheus-client==0.17.1
 # flask-prometheus-metrics==1.0.0
+gunicorn==20.1.0
