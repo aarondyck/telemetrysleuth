@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 TCP Listener Service for Telemetry Sleuth SMDR Data Capture.
 
