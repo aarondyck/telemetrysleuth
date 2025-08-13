@@ -97,11 +97,8 @@ def index():
 
 
 @app.route('/search')
-def search():
-    """Search and filter call records."""
-    # Get search parameters
-    caller = request.args.get('caller', '').strip()
-    called = request.args.get('called', '').strip()
-    direction = request.args.get('direction', '').strip()
-    date_from = request.args.get('date_from', '').strip()
-    date_to = request.args.get('date_to', '').strip()
+
+# ...existing code...
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
