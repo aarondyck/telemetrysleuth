@@ -16,6 +16,15 @@ sudo dnf install gcc make python3 python3-pip git -y
 sudo dnf install postgresql-server postgresql-contrib -y
 sudo postgresql-setup --initdb
 sudo systemctl enable --now postgresql
+
+# Update PostgreSQL authentication to allow password connections
+sudo nano /var/lib/pgsql/data/pg_hba.conf
+# Change these lines to use md5:
+# local   all             all                                     md5
+# host    all             all             127.0.0.1/32            md5
+# host    all             all             ::1/128                 md5
+# Save and exit, then restart PostgreSQL:
+sudo systemctl restart postgresql
 ```
 
 ## 4. Set Up PostgreSQL Database and User
